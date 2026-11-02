@@ -1,0 +1,19 @@
+{
+  "name": "taskflow-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --configLoader native",
+    "build": "vite build --configLoader native",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "vite": "^7.3.7",
+    "@vitejs/plugin-react": "^5.0.0"
+  }
+}

@@ -1,0 +1,9 @@
+node_modules/
+.env
+dist/
+.taskflow-data/
+*.log
+test-results/
+playwright-report/
+
+backend/generated/

@@ -1,0 +1,129 @@
+// Domain models. Database column names use explicit snake_case.
+// CHECK constraints, the deferrable team FK and partial indexes live in migration.sql.
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+datasource db { 
+  provider = "postgresql"
+}
+enum UserRole {
+  ADMIN
+  MANAGER
+  TEAM_LEAD
+  EMPLOYEE
+  @@map("user_role")
+}
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  @@map("project_status")
+}
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  COMPLETED
+  BLOCKED
+  @@map("task_status")
+}
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+  @@map("task_priority")
+}
+model User {
+  id            String   @id @default(uuid()) @db.Uuid
+  name          String   @db.VarChar(100)
+  email         String   @unique @db.VarChar(254)
+  password_hash String
+  role          UserRole @default(EMPLOYEE)
+  active        Boolean  @default(true)
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime @default(now()) @db.Timestamptz(6)
+  managedProjects Project[]
+  memberships   ProjectMember[]
+  createdTasks  Task[]
+  comments      Comment[]
+  activityLogs  ActivityLog[]
+  @@index([name], map: "users_name")
+  @@map("users")
+}
+model Project {
+  id          String        @id @default(uuid()) @db.Uuid
+  name        String        @db.VarChar(160)
+  description String        @default("")
+  status      ProjectStatus @default(PLANNING)
+  manager_id  String        @db.Uuid
+  created_at  DateTime      @default(now()) @db.Timestamptz(6)
+  updated_at  DateTime      @default(now()) @db.Timestamptz(6)
+  deleted_at  DateTime?     @db.Timestamptz(6)
+  manager     User          @relation(fields: [manager_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  members     ProjectMember[]
+  tasks       Task[]
+  @@map("projects")
+}
+model ProjectMember {
+  project_id   String   @db.Uuid
+  user_id      String   @db.Uuid
+  team_lead_id String?  @db.Uuid
+  joined_at    DateTime @default(now()) @db.Timestamptz(6)
+  project      Project  @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user         User     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  teamLead     ProjectMember? @relation("Team", fields: [project_id, team_lead_id], references: [project_id, user_id], onDelete: NoAction, onUpdate: NoAction)
+  reports      ProjectMember[] @relation("Team")
+  assignedTasks Task[]
+  @@id([project_id, user_id])
+  @@index([user_id, project_id], map: "members_user_project")
+  @@index([project_id, team_lead_id, user_id], map: "members_team")
+  @@map("project_members")
+}
+model Task {
+  id             String       @id @default(uuid()) @db.Uuid
+  project_id     String       @db.Uuid
+  title          String       @db.VarChar(200)
+  description    String       @default("")
+  status         TaskStatus   @default(TODO)
+  priority       TaskPriority @default(MEDIUM)
+  assignee_id    String?      @db.Uuid
+  due_date       DateTime?    @db.Date
+  blocked_reason String?      @db.VarChar(1000)
+  completed_at   DateTime?    @db.Timestamptz(6)
+  created_by     String       @db.Uuid
+  created_at     DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime     @default(now()) @db.Timestamptz(6)
+  deleted_at     DateTime?    @db.Timestamptz(6)
+  project        Project      @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  assigneeMember ProjectMember? @relation(fields: [project_id, assignee_id], references: [project_id, user_id], onDelete: NoAction, onUpdate: NoAction)
+  creator        User         @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  comments       Comment[]
+  activityLogs   ActivityLog[]
+  @@map("tasks")
+}
+model Comment {
+  id         String   @id @default(uuid()) @db.Uuid
+  task_id    String   @db.Uuid
+  author_id  String   @db.Uuid
+  body       String   @db.VarChar(4000)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  task       Task     @relation(fields: [task_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  author     User     @relation(fields: [author_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  @@index([task_id, created_at(sort: Desc), id], map: "comments_task_date")
+  @@map("comments")
+}
+model ActivityLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  task_id    String   @db.Uuid
+  actor_id   String   @db.Uuid
+  action     String   @db.VarChar(60)
+  metadata   Json     @default("{}") @db.JsonB
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  task       Task     @relation(fields: [task_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  actor      User     @relation(fields: [actor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  @@index([task_id, created_at(sort: Desc), id], map: "activity_task_date")
+  @@map("activity_logs")
+}

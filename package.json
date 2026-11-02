@@ -1,0 +1,26 @@
+{
+  "name": "taskflow",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev --workspace backend",
+    "dev:frontend": "npm run dev --workspace frontend",
+    "build": "npm run build --workspace frontend",
+    "start": "npm start --workspace backend",
+    "db:migrate": "npm run db:migrate --workspace backend",
+    "db:seed": "npm run db:seed --workspace backend",
+    "test": "npm test --workspace backend",
+    "db:generate": "npm run db:generate --workspace backend",
+    "db:validate": "npm run db:validate --workspace backend",
+    "db:dev": "npm run db:dev --workspace backend",
+    "db:status": "npm run db:status --workspace backend",
+    "db:studio": "npm run db:studio --workspace backend"
+  },
+  "engines": {
+    "node": ">=24.11.0"
+  }
+}
